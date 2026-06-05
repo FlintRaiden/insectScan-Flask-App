@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>InsectScan — Klasifikasi Serangga AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+
+<!-- ══ Background noise texture ══ -->
+<div class="noise"></div>
+
+<!-- ══ Floating orbs ══ -->
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<!-- ══ Header ══ -->
+<header class="header">
+  <div class="header-inner">
+    <div class="logo">
+      <span class="logo-icon">🔬</span>
+      <span class="logo-text">InsectScan</span>
+    </div>
+    <div class="header-badge">
+      <span class="badge-dot {% if model_loaded %}ok{% else %}err{% endif %}"></span>
+      {% if model_loaded %}
+        <span>Model Aktif</span>
+      {% else %}
+        <span>Model Error</span>
+      {% endif %}
+    </div>
+  </div>
+</header>
+
+<!-- ══ Main ══ -->
+<main class="main">
+
+  <!-- Hero section -->
+  <section class="hero">
+    <div class="hero-label">Random Forest · HOG · PCA · 5 Kelas</div>
+    <h1 class="hero-title">
+      Identifikasi<br/>
+      <span class="accent">Serangga</span><br/>
+      Seketika
+    </h1>
+    <p class="hero-sub">
+      Unggah foto serangga dan model AI kami akan mengklasifikasikannya
+      dalam hitungan detik — didukung algoritma Random Forest dengan
+      ekstraksi fitur HOG dan reduksi dimensi PCA.
+    </p>
+  </section>
+
+  <!-- Upload card -->
+  <section class="upload-section">
+    <div class="card upload-card" id="uploadCard">
+
+      {% if not model_loaded %}
+      <div class="model-error-banner">
+        ⚠️ Model belum dimuat dengan benar. Periksa terminal dan sesuaikan
+        <code>extract_features()</code> di <code>app.py</code> dengan notebook pelatihan Anda.
+      </div>
+      {% endif %}
+
+      <!-- Drop zone -->
+      <div class="drop-zone" id="dropZone">
+        <input type="file" id="fileInput" accept=".jpg,.jpeg,.png,.webp,.bmp" hidden />
+
+        <div class="drop-content" id="dropContent">
+          <div class="drop-icon">📷</div>
+          <div class="drop-title">Seret & Lepas Gambar di Sini</div>
+          <div class="drop-sub">atau klik untuk memilih file</div>
+          <div class="drop-hint">JPG · PNG · WEBP · BMP  ·  Maks 16 MB</div>
+          <button class="btn-upload" id="selectBtn" type="button">Pilih Gambar</button>
+        </div>
+
+        <!-- Preview (hidden by default) -->
+        <div class="preview-content" id="previewContent" style="display:none;">
+          <img id="previewImg" src="" alt="Preview" />
+          <div class="preview-meta">
+            <span id="previewName" class="preview-name"></span>
+            <span id="previewSize" class="preview-size"></span>
+          </div>
+          <div class="preview-actions">
+            <button class="btn-classify" id="classifyBtn" type="button">
+              <span class="btn-text">🔍 Klasifikasikan</span>
+              <span class="btn-spinner" style="display:none;">⏳</span>
+            </button>
+            <button class="btn-reset" id="resetBtn" type="button">✕ Ganti Gambar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Result card (hidden until prediction) -->
+    <div class="card result-card" id="resultCard" style="display:none;">
+      <!-- filled by JS -->
+    </div>
+
+    <!-- Error card -->
+    <div class="card error-card" id="errorCard" style="display:none;">
+      <div class="error-icon">⚠️</div>
+      <div class="error-msg" id="errorMsg"></div>
+      <button class="btn-reset" id="errorResetBtn" type="button">Coba Lagi</button>
+    </div>
+  </section>
+
+  <!-- Class showcase -->
+  <section class="classes-section">
+    <h2 class="section-title">Kelas yang Dapat Dideteksi</h2>
+    <div class="classes-grid">
+      <div class="class-chip" style="--accent:#8B5CF6">
+        <span class="class-icon">🦋</span>
+        <div>
+          <div class="class-en">Butterfly</div>
+          <div class="class-id">Kupu-kupu</div>
+        </div>
+      </div>
+      <div class="class-chip" style="--accent:#06B6D4">
+        <span class="class-icon">🪲</span>
+        <div>
+          <div class="class-en">Dragonfly</div>
+          <div class="class-id">Capung</div>
+        </div>
+      </div>
+      <div class="class-chip" style="--accent:#22C55E">
+        <span class="class-icon">🦗</span>
+        <div>
+          <div class="class-en">Grasshopper</div>
+          <div class="class-id">Belalang</div>
+        </div>
+      </div>
+      <div class="class-chip" style="--accent:#EF4444">
+        <span class="class-icon">🐞</span>
+        <div>
+          <div class="class-en">Ladybird</div>
+          <div class="class-id">Kumbang Kepik</div>
+        </div>
+      </div>
+      <div class="class-chip" style="--accent:#F59E0B">
+        <span class="class-icon">🦟</span>
+        <div>
+          <div class="class-en">Mosquito</div>
+          <div class="class-id">Nyamuk</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stats strip -->
+  <section class="stats-strip">
+    <div class="stat">
+      <div class="stat-val">55.96%</div>
+      <div class="stat-label">Akurasi Test</div>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat">
+      <div class="stat-val">4,449</div>
+      <div class="stat-label">Total Gambar</div>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat">
+      <div class="stat-val">500</div>
+      <div class="stat-label">Decision Trees</div>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat">
+      <div class="stat-val">150</div>
+      <div class="stat-label">Komponen PCA</div>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat">
+      <div class="stat-val">487</div>
+      <div class="stat-label">Fitur Awal</div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <p>BAB 8 — Modul Kecerdasan Buatan (AI) · Random Forest Insect Classifier</p>
+</footer>
+
+<script src="/static/js/app.js"></script>
+</body>
+</html>
